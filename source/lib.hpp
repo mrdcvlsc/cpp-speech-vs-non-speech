@@ -1,6 +1,21 @@
 #pragma once
 
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <iostream>
+#include <sstream>
 #include <string>
+#include <vector>
+
+#include <ATen/Parallel.h>
+#include <SFML/Audio.hpp>
+#include <torch/script.h>
+
+#ifdef _WIN32
+#  include <stdlib.h>
+#endif
 
 /**
  * @brief The core implementation of the executable
@@ -19,3 +34,47 @@ struct library
 
   std::string name;
 };
+
+auto to_mono_f32(const int16_t* samples, size_t size, size_t channels)
+    -> std::vector<float>;
+
+// Simple linear resampler
+auto resample_linear(const std::vector<float>& input_samples,
+                     int in_rate,
+                     int out_rate) -> std::vector<float>;
+
+// Load audio with SFML and return mono float data resampled to
+// `target_sample_rate`.
+auto load_audio_file_as_mono_f32(const std::string& path,
+                                 std::vector<float>& out_waveform,
+                                 int target_sample_rate) -> bool;
+
+// Build batched frames from waveform.
+// frame_size: required length per model frame (e.g. 512 for sr=16000).
+// hop: sliding hop (set = frame_size for non-overlap, or frame_size/2 for 50%
+// overlap). Returns frames_data contiguous: [ frame0..., frame1..., ... ] and
+// num_frames.
+auto build_frames(const std::vector<float>& waveform,
+                  int frame_size,
+                  int hop,
+                  std::vector<float>& frames_data,
+                  int& num_frames) -> void;
+
+// Utility to stringify tensor shape
+auto tensor_shape_to_string(const torch::Tensor& input_tensor) -> std::string;
+
+// Run model on batched frames and return per-frame probabilities in `out_probs`
+// sr must be the integer sample rate (e.g. 16000)
+auto run_model_on_frames(torch::jit::script::Module& module,
+                         const std::vector<float>& frames_data,
+                         int num_frames,
+                         int frame_size,
+                         int sample_rate,
+                         std::vector<float>& out_probs) -> bool;
+
+// Aggregate per-frame probabilities into a single decision and print
+// diagnostics. Strategy: compute max prob, mean prob, and count frames above
+// threshold.
+auto aggregate_and_report(const std::vector<float>& probs,
+                          float threshold,
+                          const std::string& filename) -> void;

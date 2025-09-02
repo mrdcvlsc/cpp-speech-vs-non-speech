@@ -1,78 +1,111 @@
+// silero_vad_classifier_chunked.cpp
+// Updated to chunk waveform into frames expected by silero-vad JIT model.
+// Build with CMake linking libtorch + SFML 3.0.
+
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <iostream>
-#include <memory>
+#include <sstream>
+#include <string>
 #include <vector>
 
-#include <torch/script.h>  // Include the necessary header for LibTorch
+#include <ATen/Parallel.h>
+#include <SFML/Audio.hpp>
+#include <torch/script.h>
 
-// Function to load and run inference with the TorchScript model
-auto main(int argc, const char* argv[]) -> int
+#include "lib.hpp"
+
+// Target sample rate we resample to and pass to the model
+constexpr int TARGET_SAMPLE_RATE = 16000;
+const int SAMPLE_16KHZ = 16000;
+
+// Default decision threshold (tweak for your model/data)
+constexpr float DEFAULT_THRESHOLD = 0.5F;
+
+auto main(int argc, char** argv) -> int
 {
-  // 1. Define the file path to the saved TorchScript model
-  const std::string model_path = "audio_classifier_scripted.pt";
+  // Prefer setting these env vars in the shell for reliability; but set here as
+  // well.
+#ifdef _WIN32
+  _putenv_s("OMP_NUM_THREADS", "1");
+  _putenv_s("MKL_NUM_THREADS", "1");
+#else
+  setenv("OMP_NUM_THREADS", "1", 1);
+  setenv("MKL_NUM_THREADS", "1", 1);
+#endif
 
-  // 2. Use torch::jit::load() to load the TorchScript model
-  std::shared_ptr<torch::jit::Module> module;
-  
-  try {
-    // Deserialize the ScriptModule from a file using torch::jit::load().
-    module = std::make_shared<torch::jit::Module>(torch::jit::load(model_path));
-    std::cout << "TorchScript model loaded successfully from " << model_path
-              << '\n';
-  } catch (const c10::Error& e) {
-    // Include error handling for the loading process.
-    std::cerr << "Error loading the model\n";
-    std::cerr << e.what() << '\n';
-    return -1;
+  at::set_num_threads(1);
+  at::set_num_interop_threads(1);
+
+  std::vector<std::string> files = {"audio-samples/speech.ogg",
+                                    "audio-samples/noise.ogg"};
+  if (argc > 1) {
+    files.clear();
+    for (int i = 1; i < argc; ++i) {
+      files.emplace_back(argv[i]);
+    }
   }
 
-  // Set the model to evaluation mode (optional but good practice)
-  module->eval();
-  std::cout << "Model set to evaluation mode." << '\n';
+  const float threshold = DEFAULT_THRESHOLD;
 
-  // 4. Create a dummy input tensor in C++
-  // The model expects a tensor of shape {1, segment_len_frames}
-  // where segment_len_frames is 80000 (for 5 seconds at 16kHz)
-  int segment_len_frames = 80000;
-  // torch::randn({batch_size, sequence_length})
-  torch::Tensor input_tensor = torch::randn({1, segment_len_frames});
-  std::cout << "Created dummy input tensor with shape: " << input_tensor.sizes()
-            << '\n';
+  // Load model
+  std::string mode_path = "silero-vad.pt";
+  torch::jit::script::Module module;
+  try {
+    module = torch::jit::load(mode_path);
+    module.eval();
+    std::cout << "Loaded model: " << mode_path << '\n';
+  } catch (const c10::Error& e) {
+    std::cerr << "Failed to load model '" << mode_path << "': " << e.what()
+              << '\n';
+    return 1;
+  }
 
-  // 5. Prepare the input tensor for inference (move to device if needed)
-  // This example focuses on CPU inference for simplicity.
-  // If using GPU, you would typically do:
-  // input_tensor = input_tensor.to(at::kCUDA);
-  // module->to(at::kCUDA); // Move model to GPU
+  for (const auto& audio_file : files) {
+    std::cout << "Processing: " << audio_file << " ...\n";
+    std::vector<float> wave;
+    if (!load_audio_file_as_mono_f32(audio_file, wave, TARGET_SAMPLE_RATE)) {
+      std::cerr << "Skipping file due to load error: " << audio_file << "\n";
+      continue;
+    }
 
-  // 6. Perform inference by passing the input tensor to the loaded model
-  // object.
-  std::vector<torch::jit::IValue> inputs;
-  inputs.emplace_back(input_tensor);
+    // Determine model frame size based on sr
+    int frame_size = (TARGET_SAMPLE_RATE == SAMPLE_16KHZ) ? 512 : 256;
+    int hop = frame_size;  // non-overlapping; change to frame_size/2 for
+                           // overlap if preferred
 
-  std::cout << "Performing inference..." << '\n';
-  torch::Tensor output = module->forward(inputs).toTensor();
-  std::cout << "Inference complete." << '\n';
-  // Raw output tensor: contains logits
-  std::cout << "Raw output tensor: " << output << '\n';
+    // Build frames
+    std::vector<float> frames_data;
+    int num_frames = 0;
+    build_frames(wave, frame_size, hop, frames_data, num_frames);
 
-  // 7. Process the output tensor
-  // Apply softmax to get probabilities
-  // For binary classification, softmax over the last dimension
-  torch::Tensor probabilities = torch::softmax(output, /*dim=*/1);
-  std::cout << "Class probabilities: " << probabilities << '\n';
+    if (num_frames <= 0) {
+      std::cerr << "  no frames created from waveform; skipping\n";
+      continue;
+    }
 
-  // Find the index of the maximum value for the predicted class
-  torch::Tensor predicted_class_index = torch::argmax(probabilities, /*dim=*/1);
+    // Run model on frames
+    std::vector<float> probs;
+    bool is_ok = run_model_on_frames(
+        module, frames_data, num_frames, frame_size, TARGET_SAMPLE_RATE, probs);
 
-  // 8. Print the results of the inference
-  std::cout << "Predicted class index: " << predicted_class_index.item<int>()
-            << '\n';
+    if (!is_ok) {
+      std::cerr << "  model run failed on frames -> DECISION: does NOT contain "
+                   "human speech\n";
+      continue;
+    }
 
-  // Map index to label (assuming 0: speech, 1: non-speech)
-  const std::vector<std::string> label_map = {"speech", "non-speech"};
-  int pred_idx = predicted_class_index.item<int>();
-  std::string predicted_label = (pred_idx >= 0 && pred_idx < label_map.size())
-      ? label_map[pred_idx]
-      : "unknown";
-  std::cout << "Predicted label: " << predicted_label << '\n';
+    // If model returned more values than frames, trim or handle — keep first
+    // num_frames
+    if (static_cast<int>(probs.size()) > num_frames) {
+      probs.resize(static_cast<size_t>(num_frames));
+    }
+
+    // Aggregate and report
+    aggregate_and_report(probs, threshold, audio_file);
+  }
+
+  return 0;
 }
