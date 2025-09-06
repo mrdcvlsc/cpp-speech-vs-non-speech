@@ -26,8 +26,6 @@ constexpr float DEFAULT_THRESHOLD = 0.5F;
 
 auto main(int argc, char** argv) -> int
 {
-  // Prefer setting these env vars in the shell for reliability; but set here as
-  // well.
 #ifdef _WIN32
   _putenv_s("OMP_NUM_THREADS", "1");
   _putenv_s("MKL_NUM_THREADS", "1");
@@ -50,9 +48,10 @@ auto main(int argc, char** argv) -> int
 
   const float threshold = DEFAULT_THRESHOLD;
 
-  // Load model
-  std::string mode_path = "silero-vad.pt";
+  //   std::string mode_path = "silero-vad.pt";
+  std::string mode_path = "silero_vad_v6.jit";
   torch::jit::script::Module module;
+
   try {
     module = torch::jit::load(mode_path);
     module.eval();
@@ -66,6 +65,7 @@ auto main(int argc, char** argv) -> int
   for (const auto& audio_file : files) {
     std::cout << "Processing: " << audio_file << " ...\n";
     std::vector<float> wave;
+
     if (!load_audio_file_as_mono_f32(audio_file, wave, TARGET_SAMPLE_RATE)) {
       std::cerr << "Skipping file due to load error: " << audio_file << "\n";
       continue;
@@ -76,7 +76,6 @@ auto main(int argc, char** argv) -> int
     int hop = frame_size;  // non-overlapping; change to frame_size/2 for
                            // overlap if preferred
 
-    // Build frames
     std::vector<float> frames_data;
     int num_frames = 0;
     build_frames(wave, frame_size, hop, frames_data, num_frames);
@@ -85,9 +84,9 @@ auto main(int argc, char** argv) -> int
       std::cerr << "  no frames created from waveform; skipping\n";
       continue;
     }
-
-    // Run model on frames
+    
     std::vector<float> probs;
+
     bool is_ok = run_model_on_frames(
         module, frames_data, num_frames, frame_size, TARGET_SAMPLE_RATE, probs);
 
@@ -97,13 +96,10 @@ auto main(int argc, char** argv) -> int
       continue;
     }
 
-    // If model returned more values than frames, trim or handle — keep first
-    // num_frames
     if (static_cast<int>(probs.size()) > num_frames) {
       probs.resize(static_cast<size_t>(num_frames));
     }
 
-    // Aggregate and report
     aggregate_and_report(probs, threshold, audio_file);
   }
 

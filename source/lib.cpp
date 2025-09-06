@@ -71,6 +71,7 @@ auto load_audio_file_as_mono_f32(const std::string& path,
                                  int target_sample_rate) -> bool
 {
   sf::SoundBuffer buffer;
+
   if (!buffer.loadFromFile(path)) {
     std::cerr << "Failed to load audio file: " << path << '\n';
     return false;
