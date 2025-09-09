@@ -1,6 +1,10 @@
+cmake_minimum_required(VERSION 3.28)
+
 # Parent project does not export its library target, so this CML implicitly
 # depends on being added from it, i.e. the testing is done only from the build
 # tree and is not feasible from an install location
+
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
 project(speech-vs-non-speechTests LANGUAGES CXX)
 
@@ -63,10 +67,10 @@ FetchContent_Declare(SFML
     SYSTEM)
 FetchContent_MakeAvailable(SFML)
 
-add_library(
-    speech-vs-non-speech_lib OBJECT
-    source/lib.cpp
-)
+# add_library(
+#     speech-vs-non-speech_lib OBJECT
+#     source/lib.cpp
+# )
 
 target_include_directories(
     speech-vs-non-speech_lib ${warning_guard}
@@ -79,6 +83,15 @@ target_include_directories(
 add_executable(speech-vs-non-speech_test source/speech-vs-non-speech_test.cpp)
 target_link_libraries(speech-vs-non-speech_test PRIVATE speech-vs-non-speech_lib SFML::Audio "${TORCH_LIBRARIES}")
 target_compile_features(speech-vs-non-speech_test PRIVATE cxx_std_17)
+
+if (MSVC)
+  file(GLOB TORCH_DLLS "${TORCH_INSTALL_PREFIX}/lib/*.dll")
+    add_custom_command(TARGET speech-vs-non-speech_exe
+                        POST_BUILD
+                        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                        ${TORCH_DLLS}
+                        $<TARGET_FILE_DIR:speech-vs-non-speech_exe>)
+endif (MSVC)
 
 add_test(NAME speech-vs-non-speech_test COMMAND speech-vs-non-speech_test)
 

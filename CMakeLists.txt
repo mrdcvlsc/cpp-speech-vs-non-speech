@@ -98,11 +98,11 @@ target_link_libraries(speech-vs-non-speech_exe PRIVATE speech-vs-non-speech_lib 
 
 if (MSVC)
   file(GLOB TORCH_DLLS "${TORCH_INSTALL_PREFIX}/lib/*.dll")
-    add_custom_command(TARGET ${OUT_EXE}
+    add_custom_command(TARGET speech-vs-non-speech_exe
                         POST_BUILD
                         COMMAND ${CMAKE_COMMAND} -E copy_if_different
                         ${TORCH_DLLS}
-                        $<TARGET_FILE_DIR:${OUT_EXE}>)
+                        $<TARGET_FILE_DIR:speech-vs-non-speech_exe>)
 endif (MSVC)
 
 # ---- Install rules ----
