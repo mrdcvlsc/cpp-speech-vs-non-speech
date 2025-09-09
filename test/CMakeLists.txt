@@ -83,7 +83,6 @@ target_include_directories(
 
 add_executable(speech-vs-non-speech_test source/speech-vs-non-speech_test.cpp)
 target_link_libraries(speech-vs-non-speech_test PRIVATE speech-vs-non-speech_lib SFML::Audio "${TORCH_LIBRARIES}")
-target_include_directories(speech-vs-non-speech_test PRIVATE "${TORCH_INCLUDE_DIRS}")
 target_compile_features(speech-vs-non-speech_test PRIVATE cxx_std_17)
 
 if (MSVC)

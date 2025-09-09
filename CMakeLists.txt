@@ -95,7 +95,6 @@ set_property(TARGET speech-vs-non-speech_exe PROPERTY OUTPUT_NAME speech-vs-non-
 target_compile_features(speech-vs-non-speech_exe PRIVATE cxx_std_17)
 
 target_link_libraries(speech-vs-non-speech_exe PRIVATE speech-vs-non-speech_lib SFML::Audio "${TORCH_LIBRARIES}")
-target_include_directories(speech-vs-non-speech_test PRIVATE "${TORCH_INCLUDE_DIRS}")
 
 if (MSVC)
   file(GLOB TORCH_DLLS "${TORCH_INSTALL_PREFIX}/lib/*.dll")
