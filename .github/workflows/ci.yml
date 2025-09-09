@@ -2,12 +2,7 @@ name: Continuous Integration
 
 on:
   push:
-    branches:
-    - master
-
-  pull_request:
-    branches:
-    - master
+    branches: [ master, main ]
 
 jobs:
   lint:
@@ -30,15 +25,9 @@ jobs:
       run: cmake -P cmake/spell.cmake
 
   coverage:
-    needs: [lint]
-
     runs-on: ubuntu-24.04
 
-    # To enable coverage, delete the last line from the conditional below and
-    # edit the "<name>" placeholder to your GitHub name.
-    # If you do not wish to use codecov, then simply delete this job from the
-    # workflow.
-    if: github.repository_owner == '<name>'
+    if: github.repository_owner == 'mrdcvlsc'
       && false
 
     steps:
@@ -68,8 +57,6 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
 
   sanitize:
-    needs: [lint]
-
     runs-on: ubuntu-24.04
 
     env: { CXX: clang++-18 }
@@ -97,7 +84,6 @@ jobs:
       run: ctest --output-on-failure --no-tests=error -j 2
 
   test:
-    needs: [lint]
 
     strategy:
       matrix:
