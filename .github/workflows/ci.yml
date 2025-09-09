@@ -44,11 +44,11 @@ jobs:
       run: cmake --preset=ci-coverage -Wno-error=dev
 
     - name: Build
-      run: cmake --build build/coverage -j 2
+      run: cmake --build build/coverage
 
     - name: Test
       working-directory: build/coverage
-      run: ctest --output-on-failure --no-tests=error -j 2
+      run: ctest --output-on-failure --no-tests=error
 
     - name: Process coverage info
       run: cmake --build build/coverage -t coverage
@@ -74,7 +74,7 @@ jobs:
       run: cmake --preset=ci-sanitize -Wno-error=dev
 
     - name: Build
-      run: cmake --build build/sanitize -j 2
+      run: cmake --build build/sanitize
 
     - name: Test
       working-directory: build/sanitize
@@ -87,7 +87,7 @@ jobs:
           halt_on_error=1"
         UBSAN_OPTIONS: "print_stacktrace=1:\
           halt_on_error=1"
-      run: ctest --output-on-failure --no-tests=error -j 2
+      run: ctest --output-on-failure --no-tests=error
 
   test:
 
@@ -126,11 +126,11 @@ jobs:
       # result: cmake "--preset=ci-ubuntu" -Wno-error=dev
 
     - name: Build
-      run: cmake --build build --config Release -j 2
+      run: cmake --build build --config Release
 
     - name: Install
       run: cmake --install build --config Release --prefix prefix
 
     - name: Test
       working-directory: build
-      run: ctest --output-on-failure --no-tests=error -C Release -j 2
+      run: ctest --output-on-failure --no-tests=error -C Release
