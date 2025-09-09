@@ -17,8 +17,6 @@
 #  include <windows.h>
 #endif
 
-#include <ATen/Parallel.h>
-
 #include "lib.hpp"
 
 library::library()
@@ -453,8 +451,8 @@ silero_vad::silero_vad(const std::string& model_filename, int sample_rate_khz)
   setenv("MKL_NUM_THREADS", "1", 1);
 #endif
 
-  at::set_num_threads(1);
-  at::set_num_interop_threads(1);
+  torch::set_num_threads(1);
+  torch::set_num_interop_threads(1);
 
   std::cout << "Loading mode file: " << model_filename << '\n';
 

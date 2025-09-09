@@ -12,7 +12,6 @@
 #include <string>
 #include <vector>
 
-#include <ATen/Parallel.h>
 #include <SFML/Audio.hpp>
 #include <torch/script.h>
 
