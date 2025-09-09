@@ -1,15 +1,8 @@
 #pragma once
 
-#include <algorithm>
-#include <cmath>
-#include <cstdint>
-#include <cstdlib>
-#include <iostream>
-#include <sstream>
 #include <string>
 #include <vector>
 
-#include <ATen/Parallel.h>
 #include <SFML/Audio.hpp>
 #include <torch/script.h>
 
@@ -35,13 +28,34 @@ struct library
   std::string name;
 };
 
-auto to_mono_f32(const int16_t* samples, size_t size, size_t channels)
+class silero_vad
+{
+  std::string m_model_filename;
+  float m_threshold = 0.5f;  // decision thresholdss
+  torch::jit::script::Module m_model;
+  int m_model_sample_rate_khz;
+  int m_model_frame_size;
+
+public:
+  explicit silero_vad(const std::string& model_filename,
+                      int sample_rate_khz = 16);
+
+  auto get_model_filename() const -> const std::string;
+
+  auto has_speech(const std::string& audio_file) -> bool;
+};
+
+auto to_mono_normalized_f32(const int16_t* samples,
+                            size_t size,
+                            size_t channels) -> std::vector<float>;
+
+auto up_sampler(const std::vector<float>& y_samples, std::size_t new_size)
     -> std::vector<float>;
 
 // Simple linear resampler
 auto resample_linear(const std::vector<float>& input_samples,
-                     int in_rate,
-                     int out_rate) -> std::vector<float>;
+                     std::size_t input_sample_rate,
+                     std::size_t output_sample_rate) -> std::vector<float>;
 
 // Load audio with SFML and return mono float data resampled to
 // `target_sample_rate`.
@@ -55,7 +69,7 @@ auto load_audio_file_as_mono_f32(const std::string& path,
 // overlap). Returns frames_data contiguous: [ frame0..., frame1..., ... ] and
 // num_frames.
 auto build_frames(const std::vector<float>& waveform,
-                  int frame_size,
+                  int silero_vad_sample_window_size,
                   int hop,
                   std::vector<float>& frames_data,
                   int& num_frames) -> void;
@@ -75,6 +89,5 @@ auto run_model_on_frames(torch::jit::script::Module& module,
 // Aggregate per-frame probabilities into a single decision and print
 // diagnostics. Strategy: compute max prob, mean prob, and count frames above
 // threshold.
-auto aggregate_and_report(const std::vector<float>& probs,
-                          float threshold,
-                          const std::string& filename) -> void;
+auto aggregate_and_report(const std::vector<float>& probs, float threshold)
+    -> bool;
