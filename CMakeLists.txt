@@ -77,6 +77,8 @@ add_library(
     source/lib.cpp
 )
 
+target_link_libraries(speech-vs-non-speech_lib PRIVATE SFML::Audio "${TORCH_LIBRARIES}")
+
 target_include_directories(
     speech-vs-non-speech_lib ${warning_guard}
     PUBLIC
@@ -91,7 +93,7 @@ add_executable(speech-vs-non-speech_exe source/main.cpp)
 add_executable(speech-vs-non-speech::exe ALIAS speech-vs-non-speech_exe)
 
 target_compile_features(speech-vs-non-speech_exe PRIVATE cxx_std_17)
-target_link_libraries(speech-vs-non-speech_exe PRIVATE speech-vs-non-speech_lib SFML::Audio "${TORCH_LIBRARIES}")
+target_link_libraries(speech-vs-non-speech_exe PRIVATE speech-vs-non-speech_lib)
 
 if (MSVC)
   file(GLOB TORCH_DLLS "${TORCH_INSTALL_PREFIX}/lib/*.dll")
