@@ -90,10 +90,7 @@ target_compile_features(speech-vs-non-speech_lib PUBLIC cxx_std_17)
 add_executable(speech-vs-non-speech_exe source/main.cpp)
 add_executable(speech-vs-non-speech::exe ALIAS speech-vs-non-speech_exe)
 
-set_property(TARGET speech-vs-non-speech_exe PROPERTY OUTPUT_NAME speech-vs-non-speech)
-
 target_compile_features(speech-vs-non-speech_exe PRIVATE cxx_std_17)
-
 target_link_libraries(speech-vs-non-speech_exe PRIVATE speech-vs-non-speech_lib SFML::Audio "${TORCH_LIBRARIES}")
 
 if (MSVC)
@@ -104,6 +101,8 @@ if (MSVC)
                         ${TORCH_DLLS}
                         $<TARGET_FILE_DIR:speech-vs-non-speech_exe>)
 endif (MSVC)
+
+set_property(TARGET speech-vs-non-speech_exe PROPERTY OUTPUT_NAME speech-vs-non-speech)
 
 # ---- Install rules ----
 
