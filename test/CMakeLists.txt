@@ -88,11 +88,11 @@ target_compile_features(speech-vs-non-speech_test PRIVATE cxx_std_17)
 
 if (MSVC)
   file(GLOB TORCH_DLLS "${TORCH_INSTALL_PREFIX}/lib/*.dll")
-    add_custom_command(TARGET speech-vs-non-speech_exe
+    add_custom_command(TARGET speech-vs-non-speech_test
                         POST_BUILD
                         COMMAND ${CMAKE_COMMAND} -E copy_if_different
                         ${TORCH_DLLS}
-                        $<TARGET_FILE_DIR:speech-vs-non-speech_exe>)
+                        $<TARGET_FILE_DIR:speech-vs-non-speech_test>)
 endif (MSVC)
 
 add_test(NAME speech-vs-non-speech_test COMMAND speech-vs-non-speech_test)
