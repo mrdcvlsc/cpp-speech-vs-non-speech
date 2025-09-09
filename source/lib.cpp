@@ -58,10 +58,7 @@ std::string get_exe_path()
   }
   wpath.resize(length);
   std::filesystem::path exePath(wpath);
-  // Convert wide string path to UTF-8
-  std::wstring_convert<std::codecvt_utf8<wchar_t> > converter;
-  std::string utf8_path = converter.to_bytes(exePath.parent_path().wstring());
-  return utf8_path;
+  return exePath.parent_path().string();
 
 #else
   throw std::runtime_error("Platform not supported");

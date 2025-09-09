@@ -17,6 +17,11 @@ include(cmake/project-is-top-level.cmake)
 include(cmake/variables.cmake)
 include(FetchContent)
 
+if(MSVC)
+  message("fix macro problems when including Windows.h and using min max functions")
+  add_definitions(-DNOMINMAX)
+endif(MSVC)
+
 # libtorch
 message("--------------------------")
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
@@ -41,7 +46,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   endif()
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   message("Operating System Type: WINDOWS")
-  add_definitions(-DNOMINMAX)
   FetchContent_Declare(Torch
     URL https://download.pytorch.org/libtorch/cpu/libtorch-win-shared-with-deps-2.8.0%2Bcpu.zip
   )
