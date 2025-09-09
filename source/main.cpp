@@ -12,9 +12,6 @@
 #include <string>
 #include <vector>
 
-#include <SFML/Audio.hpp>
-#include <torch/script.h>
-
 #include "lib.hpp"
 
 auto main(int argc, char** argv) -> int

@@ -77,7 +77,7 @@ add_library(
     source/lib.cpp
 )
 
-target_link_libraries(speech-vs-non-speech_lib PRIVATE SFML::Audio "${TORCH_LIBRARIES}")
+target_link_libraries(speech-vs-non-speech_lib PUBLIC SFML::Audio "${TORCH_LIBRARIES}")
 
 target_include_directories(
     speech-vs-non-speech_lib ${warning_guard}
@@ -122,5 +122,17 @@ elseif(NOT PROJECT_IS_TOP_LEVEL)
       "Developer mode is intended for developers of speech-vs-non-speech"
   )
 endif()
+
+add_custom_target(copy_audio_files ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different "${CMAKE_SOURCE_DIR}/audio-samples" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/audio-samples"
+    DEPENDS
+        speech-vs-non-speech_exe
+)
+
+add_custom_target(copy_model ALL
+    COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/silero_vad_v6.jit" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/silero_vad_v6.jit"
+    DEPENDS
+        speech-vs-non-speech_exe
+)
 
 include(cmake/dev-mode.cmake)
