@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.28)
 # depends on being added from it, i.e. the testing is done only from the build
 # tree and is not feasible from an install location
 
-set(CMAKE_VERBOSE_MAKEFILE ON)
+# set(CMAKE_VERBOSE_MAKEFILE ON)
 
 project(speech-vs-non-speechTests LANGUAGES CXX)
 
