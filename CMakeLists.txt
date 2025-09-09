@@ -41,6 +41,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   endif()
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   message("Operating System Type: WINDOWS")
+  add_definitions(-DNOMINMAX)
   FetchContent_Declare(Torch
     URL https://download.pytorch.org/libtorch/cpu/libtorch-win-shared-with-deps-2.8.0%2Bcpu.zip
   )
@@ -123,16 +124,33 @@ elseif(NOT PROJECT_IS_TOP_LEVEL)
   )
 endif()
 
-add_custom_target(copy_audio_files ALL
-    COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different "${CMAKE_SOURCE_DIR}/audio-samples" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/audio-samples"
-    DEPENDS
-        speech-vs-non-speech_exe
+# add_custom_target(copy_audio_files ALL
+#     COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different "${CMAKE_SOURCE_DIR}/audio-samples" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/audio-samples"
+#     DEPENDS
+#         speech-vs-non-speech_exe
+# )
+
+# add_custom_target(copy_model ALL
+#     COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/silero_vad_v6.jit" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/silero_vad_v6.jit"
+#     DEPENDS
+#         speech-vs-non-speech_exe
+# )
+
+add_custom_command(
+    TARGET speech-vs-non-speech_exe POST_BUILD
+    COMMENT "Copy model"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_SOURCE_DIR}/silero_vad_v6.jit
+            $<TARGET_FILE_DIR:speech-vs-non-speech_exe>
 )
 
-add_custom_target(copy_model ALL
-    COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/silero_vad_v6.jit" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/silero_vad_v6.jit"
-    DEPENDS
-        speech-vs-non-speech_exe
+
+add_custom_command(
+    TARGET speech-vs-non-speech_exe POST_BUILD
+    COMMENT "Copy audio files"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different
+            ${CMAKE_SOURCE_DIR}/audio-samples
+            $<TARGET_FILE_DIR:speech-vs-non-speech_exe>/audio-samples
 )
 
 include(cmake/dev-mode.cmake)
