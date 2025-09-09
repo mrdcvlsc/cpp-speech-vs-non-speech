@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <filesystem>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -19,8 +20,12 @@
 
 auto main(int argc, char** argv) -> int
 {
-  std::vector<std::string> files = {"audio-samples/speech.ogg",
-                                    "audio-samples/noise.ogg"};
+  std::cout << "############## PROGRAM START #################\n";
+
+  std::vector<std::filesystem::path> files = {
+      std::filesystem::path(get_exe_path()) / "audio-samples/speech.ogg",
+      std::filesystem::path(get_exe_path()) / "audio-samples/noise.ogg"};
+
   if (argc > 1) {
     files.clear();
     for (int i = 1; i < argc; ++i) {
@@ -28,11 +33,11 @@ auto main(int argc, char** argv) -> int
     }
   }
 
-  std::string mode_path = "silero_vad_v6.jit";
-  silero_vad model(mode_path);
+  auto mode_path = std::filesystem::path(get_exe_path()) / "silero_vad_v6.jit";
+  silero_vad model(mode_path.string());
 
   for (const auto& audio_file : files) {
-    std::cout << "\n\nfinal result : " << model.has_speech(audio_file) << '\n';
+    std::cout << "\n\nfinal result : " << model.has_speech(audio_file.string()) << '\n';
   }
 
   return 0;

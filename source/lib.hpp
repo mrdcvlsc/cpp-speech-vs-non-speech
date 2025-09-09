@@ -28,6 +28,8 @@ struct library
   std::string name;
 };
 
+std::string get_exe_path();
+
 class silero_vad
 {
   std::string m_model_filename;

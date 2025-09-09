@@ -6,13 +6,67 @@
 #include <sstream>
 #include <type_traits>
 
-#include "lib.hpp"
+#if defined(__linux__)
+#  include <unistd.h>
+#elif defined(__APPLE__)
+#  include <mach-o/dyld.h>
+#elif defined(_WIN32)
+#  include <codecvt>
+#  include <locale>
+
+#  include <windows.h>
+#endif
 
 #include <ATen/Parallel.h>
+
+#include "lib.hpp"
 
 library::library()
     : name {"speech-vs-non-speech"}
 {
+}
+
+std::string get_exe_path()
+{
+#if defined(__linux__)
+  char result[PATH_MAX];
+  ssize_t count = readlink("/proc/self/exe", result, PATH_MAX - 1);
+  if (count == -1) {
+    throw std::runtime_error(
+        "Cannot determine executable path (readlink failed)");
+  }
+  result[count] = '\0';  // Null-terminate
+  std::filesystem::path exePath(result);
+  return exePath.parent_path().string();
+
+#elif defined(__APPLE__)
+  uint32_t size = PATH_MAX;
+  char result[PATH_MAX];
+  if (_NSGetExecutablePath(result, &size) != 0) {
+    throw std::runtime_error(
+        "Cannot determine executable path (_NSGetExecutablePath failed)");
+  }
+  std::filesystem::path exePath(result);
+  return exePath.parent_path().string();
+
+#elif defined(_WIN32)
+  std::wstring wpath(MAX_PATH, L'\0');
+  DWORD length =
+      GetModuleFileNameW(NULL, wpath.data(), static_cast<DWORD>(wpath.size()));
+  if (length == 0) {
+    throw std::runtime_error(
+        "Cannot determine executable path (GetModuleFileNameW failed)");
+  }
+  wpath.resize(length);
+  std::filesystem::path exePath(wpath);
+  // Convert wide string path to UTF-8
+  std::wstring_convert<std::codecvt_utf8<wchar_t> > converter;
+  std::string utf8_path = converter.to_bytes(exePath.parent_path().wstring());
+  return utf8_path;
+
+#else
+  throw std::runtime_error("Platform not supported");
+#endif
 }
 
 auto to_mono_normalized_f32(const int16_t* samples,
@@ -401,6 +455,8 @@ silero_vad::silero_vad(const std::string& model_filename, int sample_rate_khz)
 
   at::set_num_threads(1);
   at::set_num_interop_threads(1);
+
+  std::cout << "Loading mode file: " << model_filename << '\n';
 
   m_model = torch::jit::load(model_filename);
   m_model.eval();
