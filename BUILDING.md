@@ -1,9 +1,33 @@
 # Building with CMake
 
-## Build
+## Requirements
 
-This project doesn't require any special command-line flags to build to keep
-things simple.
+Requires the following librarie(s) in **ubuntu**:
+
+```bash
+sudo apt-get install \
+    libxtst-dev \
+    libxinerama-dev \
+    libx11-dev \
+    libxfixes-dev \
+    libxrandr-dev \
+    libxcursor-dev \
+    libxi-dev \
+    libudev-dev \
+    libflac-dev \
+    libvorbis-dev \
+    libgl1-mesa-dev \
+    libegl1-mesa-dev \
+    libfreetype-dev
+```
+
+Requires the following librarie(s) in **macOS**:
+
+```bash
+brew install libomp
+```
+
+## Build
 
 Here are the steps for building in release mode with a single-configuration
 generator, like the Unix Makefiles one:
