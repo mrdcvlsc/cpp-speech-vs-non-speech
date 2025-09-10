@@ -18,7 +18,7 @@ jobs:
       run: pip3 install codespell
 
     - name: Lint
-      run: cmake -D FORMAT_COMMAND=clang-format-18 -P cmake/lint.cmake
+      run: cmake -D FORMAT_COMMAND=clang-format-19 -P cmake/lint.cmake
       # with fix: cmake -D FORMAT_COMMAND=clang-format-18 -D FIX=YES -P cmake/lint.cmake
 
     - name: Spell check
