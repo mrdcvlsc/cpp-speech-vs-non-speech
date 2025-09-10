@@ -2,7 +2,7 @@
 
 ## Requirements
 
-Requires the following librarie(s) in **ubuntu**:
+Requires the following libraries in **ubuntu**:
 
 ```bash
 sudo apt-get install \
@@ -21,7 +21,7 @@ sudo apt-get install \
     libfreetype-dev
 ```
 
-Requires the following librarie(s) in **macOS**:
+Requires the following libraries in **macOS**:
 
 ```bash
 brew install libomp

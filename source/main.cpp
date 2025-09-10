@@ -33,7 +33,8 @@ auto main(int argc, char** argv) -> int
   silero_vad model(mode_path.string());
 
   for (const auto& audio_file : files) {
-    std::cout << "\n\nfinal result : " << model.has_speech(audio_file.string()) << '\n';
+    std::cout << "\n\nfinal result : " << model.has_speech(audio_file.string())
+              << '\n';
   }
 
   return 0;
