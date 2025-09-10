@@ -27,6 +27,8 @@ jobs:
       # with fix: cmake -D FIX=ON -P cmake/spell.cmake
 
   coverage:
+    needs: [lint, sanitize, test]
+
     runs-on: ubuntu-24.04
 
     if: github.repository_owner == 'mrdcvlsc'
@@ -62,6 +64,8 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
 
   sanitize:
+    needs: [ test ]
+
     runs-on: ubuntu-24.04
 
     env: { CXX: clang++-18 }
@@ -92,9 +96,9 @@ jobs:
       run: ctest --output-on-failure --no-tests=error
 
   test:
-
     strategy:
       fail-fast: false
+      max-parallel: 2
       matrix:
         os: [macos-14, ubuntu-24.04, windows-2022]
 
