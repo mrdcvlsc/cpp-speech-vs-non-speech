@@ -28,7 +28,6 @@ jobs:
     runs-on: ubuntu-24.04
 
     if: github.repository_owner == 'mrdcvlsc'
-      && false
 
     steps:
     - uses: actions/checkout@v4
