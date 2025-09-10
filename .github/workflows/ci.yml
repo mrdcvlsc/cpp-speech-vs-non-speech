@@ -19,10 +19,12 @@ jobs:
 
     - name: Lint
       run: cmake -D FORMAT_COMMAND=clang-format-18 -P cmake/lint.cmake
+      # with fix: cmake -D FORMAT_COMMAND=clang-format-18 -D FIX=YES -P cmake/lint.cmake
 
     - name: Spell check
       if: always()
       run: cmake -P cmake/spell.cmake
+      # with fix: cmake -D FIX=ON -P cmake/spell.cmake
 
   coverage:
     runs-on: ubuntu-24.04
